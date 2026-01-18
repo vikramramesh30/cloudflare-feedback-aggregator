@@ -4,6 +4,8 @@ A serverless feedback analysis tool built with Cloudflare Workers, D1 Database, 
 
 **Live Demo:** https://pmproject.vikramramesh04.workers.dev
 
+![Dashboard Screenshot](screenshot.png)
+
 ---
 
 ## Features
