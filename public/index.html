@@ -1,32 +1,360 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Hello, World!</title>
-	</head>
-	<body>
-		<h1 id="heading"></h1>
-		<p>This page comes from a static asset stored at `public/index.html` as configured in `wrangler.jsonc`.</p>
-		<button id="button" type="button">Fetch a random UUID</button>
-		<output id="random" for="button"></output>
-		<script>
-			fetch('/message')
-				.then((resp) => resp.text())
-				.then((text) => {
-					const h1 = document.getElementById('heading');
-					h1.textContent = text;
-				});
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Product Feedback Aggregator</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
 
-			const button = document.getElementById("button");
-			button.addEventListener("click", () => {
-				fetch('/random')
-					.then((resp) => resp.text())
-					.then((text) => {
-						const random = document.getElementById('random');
-						random.textContent = text;
-					});
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+			background: #f5f5f5;
+			color: #333;
+			line-height: 1.6;
+		}
+
+		header {
+			background: #fff;
+			border-bottom: 2px solid #e0e0e0;
+			padding: 1.5rem 2rem;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+		}
+
+		h1 {
+			font-size: 1.75rem;
+			color: #2c3e50;
+		}
+
+		.subtitle {
+			color: #7f8c8d;
+			font-size: 0.9rem;
+			margin-top: 0.25rem;
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 2rem auto;
+			padding: 0 2rem;
+		}
+
+		.stats {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 1rem;
+			margin-bottom: 2rem;
+		}
+
+		.stat-card {
+			background: #fff;
+			padding: 1.5rem;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+		}
+
+		.stat-number {
+			font-size: 2rem;
+			font-weight: bold;
+			color: #2c3e50;
+		}
+
+		.stat-label {
+			color: #7f8c8d;
+			font-size: 0.875rem;
+			margin-top: 0.25rem;
+		}
+
+		.sentiment-bars {
+			display: grid;
+			gap: 0.75rem;
+			margin-top: 0.5rem;
+		}
+
+		.sentiment-bar {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.sentiment-bar-fill {
+			height: 20px;
+			border-radius: 4px;
+			transition: width 0.3s;
+		}
+
+		.positive { background: #27ae60; }
+		.negative { background: #e74c3c; }
+		.neutral { background: #95a5a6; }
+
+		.sentiment-bar-label {
+			min-width: 70px;
+			font-size: 0.875rem;
+			color: #7f8c8d;
+		}
+
+		.sentiment-bar-count {
+			min-width: 30px;
+			text-align: right;
+			font-weight: 600;
+		}
+
+		.filters {
+			background: #fff;
+			padding: 1rem 1.5rem;
+			border-radius: 8px;
+			margin-bottom: 1.5rem;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+			display: flex;
+			gap: 1rem;
+			flex-wrap: wrap;
+			align-items: center;
+		}
+
+		.filter-label {
+			font-weight: 600;
+			color: #2c3e50;
+		}
+
+		.filter-btn {
+			padding: 0.5rem 1rem;
+			border: 2px solid #e0e0e0;
+			background: #fff;
+			border-radius: 6px;
+			cursor: pointer;
+			font-size: 0.875rem;
+			transition: all 0.2s;
+		}
+
+		.filter-btn:hover {
+			border-color: #3498db;
+		}
+
+		.filter-btn.active {
+			background: #3498db;
+			color: #fff;
+			border-color: #3498db;
+		}
+
+		.feedback-list {
+			display: grid;
+			gap: 1rem;
+		}
+
+		.feedback-item {
+			background: #fff;
+			padding: 1.5rem;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+			border-left: 4px solid #e0e0e0;
+		}
+
+		.feedback-item.positive { border-left-color: #27ae60; }
+		.feedback-item.negative { border-left-color: #e74c3c; }
+		.feedback-item.neutral { border-left-color: #95a5a6; }
+
+		.feedback-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 0.75rem;
+		}
+
+		.feedback-source {
+			display: inline-block;
+			padding: 0.25rem 0.75rem;
+			border-radius: 4px;
+			font-size: 0.75rem;
+			font-weight: 600;
+			text-transform: uppercase;
+		}
+
+		.source-discord { background: #5865F2; color: #fff; }
+		.source-github { background: #24292e; color: #fff; }
+		.source-support { background: #f39c12; color: #fff; }
+		.source-twitter { background: #1DA1F2; color: #fff; }
+
+		.feedback-meta {
+			display: flex;
+			gap: 1rem;
+			align-items: center;
+			font-size: 0.875rem;
+			color: #7f8c8d;
+		}
+
+		.urgency-badge {
+			padding: 0.25rem 0.5rem;
+			border-radius: 4px;
+			font-weight: 600;
+			font-size: 0.75rem;
+		}
+
+		.urgency-1, .urgency-2 { background: #d5f4e6; color: #27ae60; }
+		.urgency-3 { background: #fff3cd; color: #856404; }
+		.urgency-4, .urgency-5 { background: #f8d7da; color: #721c24; }
+
+		.feedback-content {
+			font-size: 1rem;
+			color: #2c3e50;
+			line-height: 1.6;
+		}
+
+		.feedback-author {
+			margin-top: 0.75rem;
+			font-size: 0.875rem;
+			color: #7f8c8d;
+		}
+
+		.loading {
+			text-align: center;
+			padding: 2rem;
+			color: #7f8c8d;
+		}
+
+		.empty {
+			text-align: center;
+			padding: 3rem;
+			color: #7f8c8d;
+			background: #fff;
+			border-radius: 8px;
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<h1>Product Feedback Aggregator</h1>
+		<div class="subtitle">Analyze feedback from Discord, GitHub, Support, and Twitter</div>
+	</header>
+
+	<div class="container">
+		<!-- Stats Section -->
+		<div class="stats">
+			<div class="stat-card">
+				<div class="stat-number" id="total-count">0</div>
+				<div class="stat-label">Total Feedback</div>
+			</div>
+
+			<div class="stat-card">
+				<div class="stat-label">Sentiment Distribution</div>
+				<div class="sentiment-bars" id="sentiment-bars"></div>
+			</div>
+
+			<div class="stat-card">
+				<div class="stat-number" id="avg-urgency">0</div>
+				<div class="stat-label">Average Urgency</div>
+			</div>
+		</div>
+
+		<!-- Filters -->
+		<div class="filters">
+			<span class="filter-label">Filter by Source:</span>
+			<button class="filter-btn active" data-source="all">All</button>
+			<button class="filter-btn" data-source="discord">Discord</button>
+			<button class="filter-btn" data-source="github">GitHub</button>
+			<button class="filter-btn" data-source="support">Support</button>
+			<button class="filter-btn" data-source="twitter">Twitter</button>
+		</div>
+
+		<!-- Feedback List -->
+		<div id="feedback-list" class="feedback-list">
+			<div class="loading">Loading feedback...</div>
+		</div>
+	</div>
+
+	<script>
+		let allFeedback = [];
+		let currentFilter = 'all';
+
+		// Load stats
+		async function loadStats() {
+			const response = await fetch('/api/stats');
+			const data = await response.json();
+
+			document.getElementById('total-count').textContent = data.total;
+			document.getElementById('avg-urgency').textContent = data.urgency.avg_urgency?.toFixed(1) || '0';
+
+			// Render sentiment bars
+			const sentimentBars = document.getElementById('sentiment-bars');
+			const sentiments = { positive: 0, negative: 0, neutral: 0 };
+
+			data.by_sentiment.forEach(item => {
+				sentiments[item.sentiment] = item.count;
 			});
-		</script>
-	</body>
+
+			const total = sentiments.positive + sentiments.negative + sentiments.neutral;
+
+			sentimentBars.innerHTML = ['positive', 'negative', 'neutral'].map(sentiment => {
+				const count = sentiments[sentiment];
+				const percentage = total > 0 ? (count / total) * 100 : 0;
+				return `
+					<div class="sentiment-bar">
+						<span class="sentiment-bar-label">${sentiment}</span>
+						<div class="sentiment-bar-fill ${sentiment}" style="width: ${percentage}%"></div>
+						<span class="sentiment-bar-count">${count}</span>
+					</div>
+				`;
+			}).join('');
+		}
+
+		// Load feedback
+		async function loadFeedback() {
+			const url = currentFilter === 'all'
+				? '/api/feedback?limit=100'
+				: `/api/feedback?source=${currentFilter}&limit=100`;
+
+			const response = await fetch(url);
+			const data = await response.json();
+			allFeedback = data.feedback;
+
+			renderFeedback(allFeedback);
+		}
+
+		// Render feedback list
+		function renderFeedback(feedback) {
+			const listEl = document.getElementById('feedback-list');
+
+			if (feedback.length === 0) {
+				listEl.innerHTML = '<div class="empty">No feedback found for this filter.</div>';
+				return;
+			}
+
+			listEl.innerHTML = feedback.map(item => {
+				const sentiment = item.sentiment || 'neutral';
+				const urgency = item.urgency || 3;
+				const source = item.source;
+
+				return `
+					<div class="feedback-item ${sentiment}">
+						<div class="feedback-header">
+							<span class="feedback-source source-${source}">${source}</span>
+							<div class="feedback-meta">
+								<span class="urgency-badge urgency-${urgency}">Urgency: ${urgency}</span>
+								<span>${new Date(item.created_at).toLocaleDateString()}</span>
+							</div>
+						</div>
+						<div class="feedback-content">${item.content}</div>
+						${item.author ? `<div class="feedback-author">— ${item.author}</div>` : ''}
+					</div>
+				`;
+			}).join('');
+		}
+
+		// Filter buttons
+		document.querySelectorAll('.filter-btn').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+				e.target.classList.add('active');
+				currentFilter = e.target.dataset.source;
+				loadFeedback();
+			});
+		});
+
+		// Initial load
+		loadStats();
+		loadFeedback();
+	</script>
+</body>
 </html>
