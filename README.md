@@ -185,17 +185,6 @@ CREATE TABLE feedback (
 
 ---
 
-## Features to Add
-
-- [ ] Real API integrations (Discord, GitHub, Twitter, Zendesk)
-- [ ] User authentication
-- [ ] Export to CSV/JSON
-- [ ] Email alerts for urgent feedback
-- [ ] Theme extraction (identify common topics)
-- [ ] Historical trend analysis
-
----
-
 ## Built For
 
 Cloudflare Product Manager Intern Assignment (2026)
@@ -216,4 +205,4 @@ MIT License - feel free to use this for your own projects!
 
 ## Acknowledgments
 
-Built with [Claude Code](https://claude.com/claude-code) CLI for rapid prototyping.
+Built with [Claude Code](https://claude.com/claude-code)
